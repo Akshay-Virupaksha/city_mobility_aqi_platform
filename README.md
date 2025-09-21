@@ -47,3 +47,72 @@ get_data.sh # fetch data from GitHub Releases
 .env.example
 docker-compose.yml
 README.md
+
+
+---
+
+## ✅ Prerequisites
+
+- **Docker Desktop** (Mac)
+- **Python 3** (for small helper commands)
+- **Git + GitHub CLI** (`brew install gh`) if you want to publish releases
+- **Tableau Desktop** (or **Tableau Public** to publish the workbook)
+
+---
+
+## ⚡ Quick start (TL;DR)
+
+```bash
+# 0) clone and enter
+git clone https://github.com/<your_github_username>/city_mobility_aqi_platform.git
+cd city_mobility_aqi_platform
+
+# 1) create .env from example (add your OpenAQ key + a Fernet key)
+cp .env.example .env
+# generate a proper Fernet key (44 chars)
+python3 -c 'import base64,os;print(base64.urlsafe_b64encode(os.urandom(32)).decode())'
+# paste it into .env: AIRFLOW__CORE__FERNET_KEY=...
+
+# 2) bring up infra
+docker compose up -d kafka postgres airflow-webserver airflow-scheduler
+
+# 3) create Airflow admin (then open http://localhost:8080)
+docker compose exec airflow-webserver \
+  airflow users create --role Admin --username admin --password admin \
+  --firstname You --lastname Admin --email you@example.com
+
+# 4) create Kafka topic
+docker compose exec kafka /opt/bitnami/kafka/bin/kafka-topics.sh \
+  --bootstrap-server kafka:9092 --create --topic openaq.measurements \
+  --partitions 3 --replication-factor 1 --if-not-exists
+
+# 5) start live ingest (collector → Kafka)
+docker compose up -d collector-openaq
+
+# 6) start Bronze streaming (Kafka → Parquet)
+docker compose up -d spark-openaq-bronze
+
+# 7) run Silver and Gold batches once
+docker compose run --rm spark-runner \
+  /opt/bitnami/spark/bin/spark-submit --master 'local[*]' /app/spark/openaq_silver_batch.py
+
+docker compose run --rm spark-runner \
+  /opt/bitnami/spark/bin/spark-submit --master 'local[*]' /app/spark/openaq_gold_batch.py
+
+# 8) load Postgres schema + views
+docker compose exec -T postgres psql -U mobility -d serving_dw -f /app/sql/aqi_schema.sql
+docker compose exec -T postgres psql -U mobility -d serving_dw -f /app/sql/aqi_views.sql
+
+# 9) add Airflow connection to Postgres (UI → Admin → Connections → +)
+# Conn Id: postgres_dw, Type: Postgres, Host: postgres, Schema: serving_dw, Login: mobility, Password: mobility, Port: 5432
+
+# 10) run orchestration (SQL refresh → CSV exports)
+docker compose exec -T airflow-scheduler airflow dags trigger orchestrate_serving_and_exports
+
+# 11) open Tableau workbook and Refresh
+# dashboards/tableau/city_mobility_aqi.twbx, data sources point to airflow/dags/exports/*.csv
+
+```
+
+
+
