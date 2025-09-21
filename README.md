@@ -118,6 +118,11 @@ docker compose exec -T airflow-scheduler airflow dags trigger orchestrate_servin
 
 ```
 
+## ⚙️ Configuration (.env)
+
+- Copy .env.example to .env and fill:
+
+
 
 
 
