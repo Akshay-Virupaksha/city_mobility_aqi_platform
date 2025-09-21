@@ -168,6 +168,38 @@ docker compose exec kafka /opt/bitnami/kafka/bin/kafka-console-consumer.sh \
 docker compose run --rm backfill-openaq
 ```
 
+# 🔥 Spark processing
+
+** Bronze (streaming)
+
+```bash
+docker compose up -d spark-openaq-bronze
+#output: data/bronze/openaq/event_date=YYYY-MM-DD/*.parquet
+```
+
+** Silver (batch)
+
+```bash
+docker compose run --rm spark-runner \
+  /opt/bitnami/spark/bin/spark-submit --master 'local[*]' /app/spark/openaq_silver_batch.py
+# output: data/silver/openaq/...
+```
+
+** Gold 15-minute aggregates (batch)
+
+```bash
+docker compose run --rm spark-runner \
+  /opt/bitnami/spark/bin/spark-submit --master 'local[*]' /app/spark/openaq_gold_batch.py
+# output: data/gold/openaq_15min/*.parquet
+```
+
+** Quick row counts (sanity):
+
+```bash
+docker compose run --rm spark-runner \
+  bash -lc "python - <<'PY'\nimport pandas as pd;print('gold rows:',len(pd.read_parquet('/app/data/gold/openaq_15min')))\nPY"
+```
+
 
 
 
