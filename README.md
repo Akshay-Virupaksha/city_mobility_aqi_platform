@@ -23,9 +23,13 @@
 ## 📂 Repository layout
 
 airflow/
+
 dags/
+
 export_openaq_dashboard_assets.py # exports CSVs for Tableau
+
 refresh_serving_sql.py # REFRESH MATERIALIZED VIEWs
+
 orchestrate_serving_and_exports.py # refresh → export
 exports/ # CSV outputs (gitignored; .gitkeep kept)
 collectors/
@@ -113,6 +117,7 @@ docker compose exec -T airflow-scheduler airflow dags trigger orchestrate_servin
 # dashboards/tableau/city_mobility_aqi.twbx, data sources point to airflow/dags/exports/*.csv
 
 ```
+
 
 
 
