@@ -1,0 +1,165 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: pg-mobility
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./sql:/app/sql:ro
+
+  airflow-init:
+    image: apache/airflow:2.9.3
+    container_name: airflow-init
+    env_file:
+      - .env
+    environment:
+      AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: "postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}"
+    user: "${AIRFLOW_UID:-50000}:0"
+    command: >
+      bash -c "
+      airflow db init &&
+      airflow users create
+        --username admin
+        --firstname Admin
+        --lastname User
+        --role Admin
+        --email admin@example.com
+        --password admin || true
+      "
+    depends_on:
+      - postgres
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+
+  airflow-webserver:
+    image: apache/airflow:2.9.3
+    container_name: airflow-web
+    env_file:
+      - .env
+    environment:
+      AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: "postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}"
+    user: "${AIRFLOW_UID:-50000}:0"
+    command: webserver
+    ports:
+      - "8080:8080"
+    depends_on:
+      - airflow-init
+      - postgres
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - airflow_logs:/opt/airflow/logs
+      - ./data:/opt/airflow/data
+      - ./airflow/dags/exports:/opt/airflow/exports
+
+
+  airflow-scheduler:
+    image: apache/airflow:2.9.3
+    container_name: airflow-scheduler
+    env_file:
+      - .env
+    environment:
+      AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: "postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}"
+    user: "${AIRFLOW_UID:-50000}:0"
+    command: scheduler
+    depends_on:
+      - airflow-init
+      - postgres
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - airflow_logs:/opt/airflow/logs
+      - ./data:/opt/airflow/data
+      - ./airflow/dags/exports:/opt/airflow/exports
+
+
+  kafka:
+    image: bitnami/kafka:3.6
+    container_name: kafka
+    environment:
+      - KAFKA_CFG_NODE_ID=1
+      - KAFKA_CFG_PROCESS_ROLES=broker,controller
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093,PLAINTEXT_HOST://:29092
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@kafka:9093
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=PLAINTEXT
+      - KAFKA_ENABLE_KRAFT=yes
+      - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=false
+    ports:
+      - "29092:29092"
+    volumes:
+      - kafkadata:/bitnami/kafka
+
+  collector-openaq:
+    image: python:3.11-slim
+    container_name: collector-openaq
+    depends_on:
+      - kafka
+    environment:
+      - KAFKA_BROKER=kafka:9092
+      - OPENAQ_API_KEY=${OPENAQ_API_KEY}
+      - OPENAQ_PARAMETER_ID=${OPENAQ_PARAMETER_ID:-2}
+    working_dir: /app
+    volumes:
+      - ./collectors:/app
+    command: bash -lc "pip install --no-cache-dir requests kafka-python && python openaq_to_kafka.py"
+
+  spark-openaq-bronze:
+    image: bitnami/spark:3.5.1
+    container_name: spark-openaq-bronze
+    depends_on:
+      - kafka
+    environment:
+      - KAFKA_BROKER=kafka:9092
+    working_dir: /app
+    volumes:
+      - ./spark:/app/spark
+      - ./data:/app/data
+    command:
+      - /opt/bitnami/spark/bin/spark-submit
+      - --master
+      - local[*]
+      - --packages
+      - org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.1
+      - /app/spark/openaq_kafka_to_parquet.py
+
+  spark-runner:
+    image: bitnami/spark:3.5.1
+    container_name: spark-runner
+    working_dir: /app
+    volumes:
+      - ./spark:/app/spark
+      - ./data:/app/data
+
+  backfill-openaq:
+    image: python:3.11-slim
+    depends_on:
+      - kafka
+    environment:
+      - OPENAQ_API_KEY=${OPENAQ_API_KEY}
+      - KAFKA_BOOTSTRAP=kafka:9092
+      - KAFKA_TOPIC=openaq.measurements
+      # optional overrides:
+      # - FROM_ISO=2024-01-01T00:00:00Z
+      # - TO_ISO=2025-09-01T00:00:00Z
+      # - LIMIT=1000
+      # - MAX_PAGES=800
+      # - PARAMETER_ID=2
+    volumes:
+      - ./collectors:/app/collectors
+    entrypoint: >
+      bash -lc "pip install --no-cache-dir requests kafka-python &&
+                python /app/collectors/openaq_backfill.py"
+
+
+volumes:
+  pgdata: {}
+  airflow_logs:
+  kafkadata: {}

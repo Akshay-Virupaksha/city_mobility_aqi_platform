@@ -18,3 +18,15 @@ pytest_cache/
 data/*.parquet
 data/*.json
 data/tmp/
+# generated data
+data/
+airflow/dags/exports/
+# allow folder to exist in Git
+!airflow/dags/exports/.gitkeep
+
+# common big/binary
+*.parquet
+*.zip
+*.log
+__pycache__/
+.env

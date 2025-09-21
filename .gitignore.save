@@ -1,0 +1,21 @@
+# env & secrets
+.env
+
+# python
+__pycache__/
+*.pyc
+.venv/
+venv/
+pytest_cache/
+
+# macOS
+.DS_Store
+
+# docker artifacts
+*.log
+
+# local data
+data/*.parquet
+data/*.json
+data/tmp/
+
