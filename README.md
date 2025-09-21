@@ -22,35 +22,50 @@
 
 ## 📂 Repository layout
 
-airflow/
+```bash
+city_mobility_aqi_platform/
+│── airflow/
+│   └── dags/
+│       │── export_openaq_dashboard_assets.py   # Exports CSVs for Tableau
+│       │── refresh_serving_sql.py              # REFRESH MATERIALIZED VIEWs
+│       │── orchestrate_serving_and_exports.py  # refresh → export orchestration
+│       └── exports/                            # Generated CSVs (gitignored; keep .gitkeep)
+│
+│── collectors/
+│   │── openaq_collector.py                     # Live ingest (OpenAQ → Kafka)
+│   └── openaq_backfill.py                      # Historical pull with rate-limit handling
+│
+│── spark/
+│   │── openaq_kafka_to_parquet.py              # Bronze (Kafka → Parquet, streaming)
+│   │── openaq_silver_batch.py                  # Silver (batch cleaning)
+│   │── openaq_gold_batch.py                    # Gold 15-min aggregates (batch)
+│   └── openaq_gold_to_postgres.py              # (optional) push gold to Postgres
+│
+│── sql/
+│   │── aqi_schema.sql                          # Tables, schema, indexes
+│   └── aqi_views.sql                           # Materialized views (daily, 30d exceed, latest)
+│
+│── dashboards/
+│   │── screenshots/                            # PNGs for README
+│   └── tableau/
+│       └── city_mobility_aqi.twbx              # Packaged Tableau workbook
+│
+│── scripts/
+│   └── get_data.sh                             # Fetch data from GitHub Releases
+│
+│── data/                                       # Generated artifacts (gitignored)
+│   │── bronze/
+│   │── silver/
+│   └── gold/
+│
+│── .env.example
+│── .gitignore
+│── docker-compose.yml
+│── README.md
+└── LICENSE                                    
 
-dags/
 
-export_openaq_dashboard_assets.py # exports CSVs for Tableau
-
-refresh_serving_sql.py # REFRESH MATERIALIZED VIEWs
-
-orchestrate_serving_and_exports.py # refresh → export
-exports/ # CSV outputs (gitignored; .gitkeep kept)
-collectors/
-openaq_collector.py # live ingest
-openaq_backfill.py # historical pull with rate-limit handling
-spark/
-openaq_kafka_to_parquet.py # Bronze (streaming)
-openaq_silver_batch.py # Silver (batch)
-openaq_gold_batch.py # Gold 15-min (batch)
-openaq_gold_to_postgres.py # (optional) push gold to Postgres
-sql/
-aqi_schema.sql # schema, tables, indexes
-aqi_views.sql # materialized views
-dashboards/
-tableau/city_mobility_aqi.twbx # packaged workbook
-screenshots/ # images for README
-scripts/
-get_data.sh # fetch data from GitHub Releases
-.env.example
-docker-compose.yml
-README.md
+```
 
 
 ---
@@ -360,6 +375,7 @@ Pick one (MIT/Apache-2.0). Add a LICENSE file at repo root.
 - .env is never committed. Example variables live in .env.example.
 
 - Large data is distributed via GitHub Releases. The repo only keeps code, SQL, DAGs, and the Tableau workbook.
+
 
 
 
