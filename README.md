@@ -224,13 +224,13 @@ DAGs live in airflow/dags/:
 
 - export_openaq_dashboard_assets — writes CSVs for Tableau:
 
--- airflow/dags/exports/ts_15min.csv
+--> airflow/dags/exports/ts_15min.csv
 
--- airflow/dags/exports/daily.csv
+--> airflow/dags/exports/daily.csv
 
--- airflow/dags/exports/exceedance_30d.csv
+--> airflow/dags/exports/exceedance_30d.csv
 
--- airflow/dags/exports/latest_map.csv
+--> airflow/dags/exports/latest_map.csv
 
 - orchestrate_serving_and_exports — runs SQL refresh → then exports.
 
@@ -297,6 +297,69 @@ This downloads the release ZIP and extracts:
 
 Now open the Tableau workbook and refresh.
 
+## 🛠️ Troubleshooting
+
+Airflow “Fernet key” error
+Generate a 44-char key:
+
+```bash
+python3 -c 'import base64,os;print(base64.urlsafe_b64encode(os.urandom(32)).decode())'
+```
+
+Put it in .env → AIRFLOW__CORE__FERNET_KEY=..., then recreate webserver + scheduler.
+
+Airflow can’t see DAGs
+Verify the bind mount in docker-compose.yml maps ./airflow/dags:/opt/airflow/dags.
+Check:
+
+```bash
+docker compose exec -T airflow-scheduler ls /opt/airflow/dags
+```
+
+Tableau only shows one month on the calendar
+Ensure daily.csv has multiple months; re-run export_openaq_dashboard_assets to refresh.
+Confirm Tableau field type is Date and you’re using Month on columns (not a single discrete month).
+
+Backfill hits 429 (rate limits)
+Re-run later; the backfill script paginates and respects limits.
+
+### 🧱 Design choices
+
+- CSV exports for Tableau: works with Tableau Public and makes publishing easy.
+
+- Postgres materialized views: fast, resumable refresh, familiar SQL surface.
+
+- Kafka + Spark: demonstrates streaming ingest and structured streaming for resume-ready skills.
+
+- Docker Compose: quick local orchestration without cloud dependencies.
+
+## 🗺️ Roadmap (nice-to-have)
+
+- Data quality checks in Airflow (null/range checks).
+
+- Incremental MV refresh logic.
+
+- Streamlit or Superset as a secondary consumer.
+
+- CI to lint Python and validate docker compose config.
+
+## 🙌 Credits
+
+- Data from OpenAQ (v3 API).
+
+- Bitnami containers for Kafka/Spark.
+
+- Apache Airflow, Apache Spark, PostgreSQL, Tableau.
+
+## 📄 License
+
+Pick one (MIT/Apache-2.0). Add a LICENSE file at repo root.
+
+## 📝 Notes
+
+- .env is never committed. Example variables live in .env.example.
+
+- Large data is distributed via GitHub Releases. The repo only keeps code, SQL, DAGs, and the Tableau workbook.
 
 
 
