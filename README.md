@@ -122,14 +122,14 @@ docker compose exec -T airflow-scheduler airflow dags trigger orchestrate_servin
 
 - Copy .env.example to .env and fill:
 
-# Airflow
+## Airflow
 AIRFLOW__CORE__FERNET_KEY=REPLACE_WITH_44_CHAR_URLSAFE_BASE64
 
-# OpenAQ v3 (create a free key on OpenAQ)
+## OpenAQ v3 (create a free key on OpenAQ)
 OPENAQ_API_KEY=REPLACE_WITH_YOUR_KEY
 OPENAQ_BASE_URL=https://api.openaq.org/v3
 
-# Postgres
+## Postgres
 POSTGRES_DB=serving_dw
 POSTGRES_USER=mobility
 POSTGRES_PASSWORD=mobility
@@ -145,7 +145,7 @@ docker compose ps
 
 ** Create an admin user if needed (see quick start).
 
-# 📡 Kafka + ingest
+## 📡 Kafka + ingest
 
 ```bash
 docker compose exec kafka /opt/bitnami/kafka/bin/kafka-topics.sh \
@@ -167,6 +167,7 @@ docker compose exec kafka /opt/bitnami/kafka/bin/kafka-console-consumer.sh \
 ```bash
 docker compose run --rm backfill-openaq
 ```
+
 
 
 
