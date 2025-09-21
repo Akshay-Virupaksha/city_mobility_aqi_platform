@@ -61,8 +61,7 @@ city_mobility_aqi_platform/
 │── .env.example
 │── .gitignore
 │── docker-compose.yml
-│── README.md
-└── LICENSE                                    
+│── README.md                                 
 
 
 ```
@@ -375,6 +374,7 @@ Pick one (MIT/Apache-2.0). Add a LICENSE file at repo root.
 - .env is never committed. Example variables live in .env.example.
 
 - Large data is distributed via GitHub Releases. The repo only keeps code, SQL, DAGs, and the Tableau workbook.
+
 
 
 
