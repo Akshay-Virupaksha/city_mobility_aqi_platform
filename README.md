@@ -251,8 +251,51 @@ ls -lh airflow/dags/exports/*.csv
 wc -l airflow/dags/exports/*.csv | sed -n '1,20p'
 ```
 
+## 📊 Tableau
 
+- Open dashboards/tableau/city_mobility_aqi.twbx.
 
+- Data sources point to the CSVs in airflow/dags/exports/.
+
+- Click Data → Refresh All.
+
+Sheets included:
+
+- Map: latest PM2.5 by location (WHO/EPA color threshold parameter).
+
+- 15-min Trend: time series for selected locations.
+
+- Calendar (Daily Avg): heatmap by day.
+
+- Exceedance Leaderboard (30d).
+
+- KPI strip: active locations, 24h median, 30d exceed days, last ingest.
+
+Tip: If a timestamp shows as string, set the field type to Date & Time in Tableau (exports are ISO-8601 UTC).
+
+## 🚀 Run & Data
+
+You have two choices:
+
+A) Generate data locally (full pipeline)
+
+Follow Quick start. CSVs for Tableau will appear under airflow/dags/exports/.
+
+B) Download prebuilt data (free, via GitHub Releases)
+
+Large datasets are published as release assets so the repo stays small.
+
+```bash
+bash scripts/get_data.sh
+```
+
+This downloads the release ZIP and extracts:
+
+- data/gold/ (Parquet, 15-min gold)
+
+- airflow/dags/exports/ (CSV files for Tableau)
+
+Now open the Tableau workbook and refresh.
 
 
 
