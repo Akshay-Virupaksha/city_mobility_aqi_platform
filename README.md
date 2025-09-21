@@ -122,6 +122,26 @@ docker compose exec -T airflow-scheduler airflow dags trigger orchestrate_servin
 
 - Copy .env.example to .env and fill:
 
+# Airflow
+AIRFLOW__CORE__FERNET_KEY=REPLACE_WITH_44_CHAR_URLSAFE_BASE64
+
+# OpenAQ v3 (create a free key on OpenAQ)
+OPENAQ_API_KEY=REPLACE_WITH_YOUR_KEY
+OPENAQ_BASE_URL=https://api.openaq.org/v3
+
+# Postgres
+POSTGRES_DB=serving_dw
+POSTGRES_USER=mobility
+POSTGRES_PASSWORD=mobility
+
+Do not commit .env.
+
+## 🧪 Bringing up the stack
+
+docker compose up -d kafka postgres airflow-webserver airflow-scheduler
+docker compose ps
+
+
 
 
 
