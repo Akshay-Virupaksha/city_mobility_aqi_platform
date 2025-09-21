@@ -138,8 +138,36 @@ Do not commit .env.
 
 ## 🧪 Bringing up the stack
 
+```bash
 docker compose up -d kafka postgres airflow-webserver airflow-scheduler
 docker compose ps
+```
+
+** Create an admin user if needed (see quick start).
+
+# 📡 Kafka + ingest
+
+```bash
+docker compose exec kafka /opt/bitnami/kafka/bin/kafka-topics.sh \
+  --bootstrap-server kafka:9092 --create --topic openaq.measurements \
+  --partitions 3 --replication-factor 1 --if-not-exists
+```
+
+** Live collector:
+
+```bash
+docker compose up -d collector-openaq
+# optional: peek
+docker compose exec kafka /opt/bitnami/kafka/bin/kafka-console-consumer.sh \
+  --bootstrap-server kafka:9092 --topic openaq.measurements --from-beginning --max-messages 5
+```
+
+** Backfill (optional; handles rate limits, can be slow):
+
+```bash
+docker compose run --rm backfill-openaq
+```
+
 
 
 
