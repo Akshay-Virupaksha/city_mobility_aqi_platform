@@ -200,7 +200,56 @@ docker compose run --rm spark-runner \
   bash -lc "python - <<'PY'\nimport pandas as pd;print('gold rows:',len(pd.read_parquet('/app/data/gold/openaq_15min')))\nPY"
 ```
 
+## 🗄️ Postgres serving layer
 
+- Load schema and views:
+
+```bash
+docker compose exec -T postgres psql -U mobility -d serving_dw -f /app/sql/aqi_schema.sql
+docker compose exec -T postgres psql -U mobility -d serving_dw -f /app/sql/aqi_views.sql
+```
+
+- Check counts:
+
+```bash
+docker compose exec -T postgres psql -U mobility -d serving_dw -c "SELECT COUNT(*) FROM aqi.openaq_15min;"
+docker compose exec -T postgres psql -U mobility -d serving_dw -c "SELECT COUNT(*) FROM aqi.daily_avg_mv;"
+```
+
+## ⏱️ Airflow orchestration
+
+DAGs live in airflow/dags/:
+
+- refresh_serving_sql — refreshes Postgres materialized views.
+
+- export_openaq_dashboard_assets — writes CSVs for Tableau:
+
+-- airflow/dags/exports/ts_15min.csv
+
+-- airflow/dags/exports/daily.csv
+
+-- airflow/dags/exports/exceedance_30d.csv
+
+-- airflow/dags/exports/latest_map.csv
+
+- orchestrate_serving_and_exports — runs SQL refresh → then exports.
+
+Setup:
+
+1. Airflow UI → Admin → Connections → add postgres_dw (see Quick start).
+
+2. Trigger orchestration:
+
+```bash
+docker compose exec -T airflow-scheduler airflow dags trigger orchestrate_serving_and_exports
+```
+
+3. CSV sanity:
+
+```bash
+ls -lh airflow/dags/exports/*.csv
+wc -l airflow/dags/exports/*.csv | sed -n '1,20p'
+```
 
 
 
