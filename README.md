@@ -143,7 +143,7 @@ docker compose up -d kafka postgres airflow-webserver airflow-scheduler
 docker compose ps
 ```
 
-** Create an admin user if needed (see quick start).
+- Create an admin user if needed (see quick start).
 
 ## 📡 Kafka + ingest
 
@@ -153,7 +153,7 @@ docker compose exec kafka /opt/bitnami/kafka/bin/kafka-topics.sh \
   --partitions 3 --replication-factor 1 --if-not-exists
 ```
 
-** Live collector:
+- Live collector:
 
 ```bash
 docker compose up -d collector-openaq
@@ -162,22 +162,22 @@ docker compose exec kafka /opt/bitnami/kafka/bin/kafka-console-consumer.sh \
   --bootstrap-server kafka:9092 --topic openaq.measurements --from-beginning --max-messages 5
 ```
 
-** Backfill (optional; handles rate limits, can be slow):
+- Backfill (optional; handles rate limits, can be slow):
 
 ```bash
 docker compose run --rm backfill-openaq
 ```
 
-# 🔥 Spark processing
+## 🔥 Spark processing
 
-** Bronze (streaming)
+- Bronze (streaming)
 
 ```bash
 docker compose up -d spark-openaq-bronze
 #output: data/bronze/openaq/event_date=YYYY-MM-DD/*.parquet
 ```
 
-** Silver (batch)
+- Silver (batch)
 
 ```bash
 docker compose run --rm spark-runner \
@@ -185,7 +185,7 @@ docker compose run --rm spark-runner \
 # output: data/silver/openaq/...
 ```
 
-** Gold 15-minute aggregates (batch)
+- Gold 15-minute aggregates (batch)
 
 ```bash
 docker compose run --rm spark-runner \
@@ -193,12 +193,13 @@ docker compose run --rm spark-runner \
 # output: data/gold/openaq_15min/*.parquet
 ```
 
-** Quick row counts (sanity):
+- Quick row counts (sanity):
 
 ```bash
 docker compose run --rm spark-runner \
   bash -lc "python - <<'PY'\nimport pandas as pd;print('gold rows:',len(pd.read_parquet('/app/data/gold/openaq_15min')))\nPY"
 ```
+
 
 
 
