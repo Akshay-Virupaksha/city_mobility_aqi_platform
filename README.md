@@ -365,15 +365,13 @@ Re-run later; the backfill script paginates and respects limits.
 
 - Apache Airflow, Apache Spark, PostgreSQL, Tableau.
 
-## 📄 License
-
-Pick one (MIT/Apache-2.0). Add a LICENSE file at repo root.
 
 ## 📝 Notes
 
 - .env is never committed. Example variables live in .env.example.
 
 - Large data is distributed via GitHub Releases. The repo only keeps code, SQL, DAGs, and the Tableau workbook.
+
 
 
 
